@@ -1,0 +1,140 @@
+version: "3.8"
+
+services:
+  # =====================================================================
+  # Infrastructure: PostgreSQL Database & Redis Cache / Rate Limiter
+  # =====================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: trafficguard-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: trafficguard
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d trafficguard"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    networks:
+      - trafficguard-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: trafficguard-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    networks:
+      - trafficguard-net
+
+  # =====================================================================
+  # Upstream Backend Services (Simulated Workload Nodes)
+  # =====================================================================
+  backend-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: trafficguard-backend-1
+    environment:
+      PORT: "8001"
+      SERVICE_ID: "backend-1"
+      SERVICE_NAME: "Alpha Service (High Capacity)"
+    ports:
+      - "8001:8001"
+    networks:
+      - trafficguard-net
+
+  backend-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: trafficguard-backend-2
+    environment:
+      PORT: "8002"
+      SERVICE_ID: "backend-2"
+      SERVICE_NAME: "Beta Service (Standard)"
+    ports:
+      - "8002:8002"
+    networks:
+      - trafficguard-net
+
+  backend-3:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: trafficguard-backend-3
+    environment:
+      PORT: "8003"
+      SERVICE_ID: "backend-3"
+      SERVICE_NAME: "Gamma Service (Light)"
+    ports:
+      - "8003:8003"
+    networks:
+      - trafficguard-net
+
+  # =====================================================================
+  # TrafficGuard API Gateway (Core Reverse Proxy Engine)
+  # =====================================================================
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    container_name: trafficguard-gateway
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://postgres:postgrespassword@postgres:5432/trafficguard"
+      REDIS_URL: "redis://redis:6379/0"
+      BACKEND_1_URL: "http://backend-1:8001"
+      BACKEND_2_URL: "http://backend-2:8002"
+      BACKEND_3_URL: "http://backend-3:8003"
+      DEFAULT_ALGORITHM: "round_robin"
+      DEFAULT_RATE_LIMIT_CAPACITY: 30
+      DEFAULT_RATE_LIMIT_REFILL_RATE: 10.0
+      HEALTH_CHECK_INTERVAL_SECONDS: 3.0
+      ADAPTIVE_TARGET_LATENCY_MS: 120.0
+      ADAPTIVE_MAX_LATENCY_MS: 350.0
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend-1:
+        condition: service_started
+      backend-2:
+        condition: service_started
+      backend-3:
+        condition: service_started
+    networks:
+      - trafficguard-net
+
+  # =====================================================================
+  # TrafficGuard React Dashboard UI
+  # =====================================================================
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: trafficguard-dashboard
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway
+    networks:
+      - trafficguard-net
+
+networks:
+  trafficguard-net:
+    driver: bridge
+
+volumes:
+  pgdata:
