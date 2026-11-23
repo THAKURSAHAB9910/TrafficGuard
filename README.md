@@ -11,6 +11,36 @@
 
 🌐 **Live Vercel Production Deployment:** [https://trafficguard-vishesh9910.vercel.app](https://trafficguard-vishesh9910.vercel.app)
 
+---
+
+## 🖥️ Live Dashboard Tour & Overview
+
+[![TrafficGuard Live Dashboard Preview](assets/dashboard-preview.png)](https://trafficguard-vishesh9910.vercel.app)
+
+TrafficGuard includes an interactive, production-grade telemetry and resilience dashboard built with **React 18**, **TypeScript**, and **Tailwind CSS**. It provides comprehensive real-time visibility and active controls across the traffic pipeline:
+
+- **6 KPI Metric Cards Grid**:
+  - **Throughput**: Real-time requests per second (RPS) and total request counter.
+  - **Latency (Avg / p95)**: Dynamic percentile calculations ($P_{50}, P_{95}, P_{99}$, Min, Max).
+  - **Error Rate**: Automated calculation of 4xx/5xx failure rates with status indicators (`STABLE` vs `ELEVATED`).
+  - **Rate-Limit Rejections**: Real-time counter of blocked abusive requests (`429 Shield`).
+  - **Circuit Breaker & Load Shed**: Isolated requests blocked by tripped circuit breakers or AIMD concurrency caps.
+  - **Cache Hit Rate**: Live cache ratio with hits, misses, and bypass counters.
+- **Dynamic Load Balancing Strategy Switcher**:
+  - Live multi-segment visual progress bar displaying real-time traffic distribution across nodes.
+  - 1-click strategy toggle between **Round Robin**, **Least Connections**, and **Smooth Weighted Round Robin**.
+- **Backend Service Fleet with Runtime Fault Injection**:
+  - Node cards for all 3 backends displaying current routing weight, active in-flight requests, and $P_{95}$ latency.
+  - Real-time health status pills (`HEALTHY`, `UNHEALTHY`, `FLAPPING`) and circuit breaker badges (`CLOSED`, `OPEN`, `HALF_OPEN`).
+  - Live weight sliders ($1\times - 10\times$) for dynamic traffic reweighting.
+  - **1-Click Chaos Buttons**: Inject `+400ms` latency, simulate `60% Err` to trip breakers, `Crash/Revive` nodes to test failover, and `Reset` backends.
+- **Adaptive Concurrency Control (AIMD)**:
+  - Real-time specification display (Target SLA 120ms, Breach 350ms, Backoff $0.7\times$, Recovery $+1/\text{sec}$).
+  - **Explainable Decision Audit Log**: Live audit feed displaying automatic `SHED`, `EXPAND`, and `HOLD` actions with timestamp, node ID, observed latency, and previous vs new limit.
+- **Dual-Mode Connectivity**:
+  - **Cloud Interactive Mode**: Autonomous, zero-dependency browser simulation engine preloaded with 3 backends and live traffic generation for instant evaluation on Vercel.
+  - **Local Gateway Mode**: Connects directly to `http://localhost:8000` (Docker or local FastAPI gateway) with 1-click switching in the header.
+
 It sits between clients and multiple upstream backend services, actively distributing load, detecting failures, enforcing distributed rate limits, isolating unhealthy services via circuit breakers, and dynamically shedding load using adaptive concurrency control.
 
 ---

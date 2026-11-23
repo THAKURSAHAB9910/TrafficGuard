@@ -185,3 +185,41 @@ Modular strategy pattern supporting dynamic hot-swapping at runtime:
 ### 3.6 HTTP Caching Engine (`gateway/core/cache.py`)
 - **Cache Key**: SHA-256 hash of `METHOD:PATH:SORTED_QUERY_PARAMS`.
 - **Safety**: Automatically bypasses requests with `Authorization`, session cookies, or `Cache-Control: no-cache`. Responses with `Set-Cookie` or `Cache-Control: private` are never stored.
+
+### 3.7 Live Resilience Dashboard & Dual-Mode Telemetry Architecture (`dashboard/`)
+The frontend dashboard provides real-time observability, telemetry visualization, and runtime chaos injection without page reloads.
+
+```mermaid
+flowchart LR
+    subgraph UI ["React 18 Dashboard UI"]
+        KPICards["KPI Metric Cards<br/>RPS, Latency, Errors, 429s"]
+        LBPills["Load Balancer Selector<br/>RR / LeastConn / WeightedRR"]
+        FleetCards["Backend Node Fleet<br/>Weight Slider & Fault Injection"]
+        AIMDPanel["AIMD Decision Audit Log"]
+        LiveLogs["Live Telemetry Log Stream"]
+    end
+
+    subgraph ClientLayer ["Unified API Client (`api.ts`)"]
+        ModeCheck{"Mode Check<br/>Cloud vs Local"}
+    end
+
+    subgraph CloudMode ["Autonomous Cloud Engine (`cloudEngine.ts`)"]
+        VirtualFleet["Virtual Backend Fleet (3 Nodes)"]
+        TrafficSim["Traffic Generator (24-36 RPS)"]
+        ClientSideAIMD["In-Browser AIMD & Circuit Breakers"]
+    end
+
+    subgraph LiveMode ["Production Gateway"]
+        FastAPIGateway["FastAPI Gateway (Port 8000)"]
+    end
+
+    UI --> ClientLayer
+    ModeCheck -- Cloud Interactive Mode --> CloudMode
+    ModeCheck -- Local Gateway Mode --> LiveMode
+```
+
+- **Dual-Mode Operation**:
+  - **Cloud Interactive Mode**: Powers the public Vercel deployment with zero external backend dependencies. Runs an autonomous in-browser simulation generating realistic traffic distributions, processing rate limits, calculating percentile latencies, tripping circuit breakers, and logging AIMD shedding decisions.
+  - **Local Gateway Mode**: Connects directly to the FastAPI reverse proxy (`http://localhost:8000`) or custom endpoint to visualize and control live physical backends.
+- **1-Second Polling & Telemetry Synchronization**: Subscribes to `/api/metrics/summary`, `/api/admin/backends`, and `/api/metrics/live-logs` with sub-second delta updates.
+- **Interactive Control**: Allows dynamic reweighting ($1\times - 10\times$), circuit breaker reset, cache flushing, and fault injection (`+400ms delay`, `60% error rate`, `server crash/revive`).
