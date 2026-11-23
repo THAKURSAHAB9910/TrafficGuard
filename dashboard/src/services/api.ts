@@ -9,7 +9,12 @@ const STORAGE_KEY_URL = 'tg_gateway_url';
 export const apiConfig = {
   getMode(): GatewayMode {
     const saved = localStorage.getItem(STORAGE_KEY_MODE);
-    return (saved as GatewayMode) || 'cloud';
+    if (saved) return saved as GatewayMode;
+    // Default to real local gateway when running locally
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return 'custom';
+    }
+    return 'cloud';
   },
   setMode(mode: GatewayMode) {
     localStorage.setItem(STORAGE_KEY_MODE, mode);

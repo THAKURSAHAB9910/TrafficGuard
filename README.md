@@ -95,40 +95,136 @@ It sits between clients and multiple upstream backend services, actively distrib
 
 ---
 
-## 3. Quickstart Guide
+## 3. Local Development & Interface Preview
 
-### Option A: Running with Docker Compose (Recommended)
+TrafficGuard is fully configured for instantaneous local development, testing, and UI preview on your computer without requiring any cloud hosting.
 
-Start the full stack (PostgreSQL, Redis, 3 Backends, API Gateway, and Dashboard UI) with a single command:
+![TrafficGuard Local Live Interface](assets/local-dashboard-preview.png)
 
+### 3.1 Single-Command Local Startup
+
+Choose the convenient startup method for your workflow:
+
+#### Option A: Windows 1-Click Batch (Fastest)
+Double-click `start_local.bat` in the project root folder, or run:
+```cmd
+start_local.bat
+```
+
+#### Option B: PowerShell
+```powershell
+.\start_local.ps1
+```
+
+#### Option C: Cross-Platform Python Orchestrator
+```bash
+python run_local.py
+```
+
+*The orchestrator automatically validates dependencies, launches all 3 upstream backend services, initializes the API gateway, starts the Vite React dev server, streams colored logs, and provides clean one-key (`Ctrl+C`) teardown.*
+
+#### Option D: Docker Compose
 ```bash
 docker compose up --build
 ```
 
-Access the components:
-- **React Dashboard UI**: [http://localhost:3000](http://localhost:3000)
-- **Gateway Reverse Proxy**: [http://localhost:8000](http://localhost:8000)
-- **Prometheus Telemetry**: [http://localhost:8000/metrics](http://localhost:8000/metrics)
-- **Backend 1 (Alpha)**: [http://localhost:8001](http://localhost:8001)
-- **Backend 2 (Beta)**: [http://localhost:8002](http://localhost:8002)
-- **Backend 3 (Gamma)**: [http://localhost:8003](http://localhost:8003)
+---
+
+### 3.2 Service URLs & Ports
+
+When the local environment starts, all components are available locally:
+
+| Service | Local URL | Description |
+| :--- | :--- | :--- |
+| **React + Vite Dashboard** | [`http://localhost:5173`](http://localhost:5173) | Modern resilience dashboard with real-time telemetry and controls |
+| **API Gateway** | [`http://localhost:8000`](http://localhost:8000) | Primary reverse proxy and resilience engine |
+| **Gateway Health** | [`http://localhost:8000/health`](http://localhost:8000/health) | Gateway health check (`{"status": "UP"}`) |
+| **Prometheus Metrics** | [`http://localhost:8000/metrics`](http://localhost:8000/metrics) | Prometheus-compatible telemetry endpoint |
+| **Backend 1 (Alpha)** | [`http://127.0.0.1:8001/status`](http://127.0.0.1:8001/status) | High capacity service (Weight: 3, Concurrency: 50) |
+| **Backend 2 (Beta)** | [`http://127.0.0.1:8002/status`](http://127.0.0.1:8002/status) | Medium capacity service (Weight: 2, Concurrency: 40) |
+| **Backend 3 (Gamma)** | [`http://127.0.0.1:8003/status`](http://127.0.0.1:8003/status) | Low capacity service (Weight: 1, Concurrency: 25) |
 
 ---
 
-### Option B: Local Execution (Without Docker)
+### 3.3 Interactive Dashboard Controls & Real-Time Data
 
-You can run TrafficGuard directly using Python and Node:
+The interface at [`http://localhost:5173`](http://localhost:5173) connects directly to the running FastAPI gateway at `http://localhost:8000`. Every button, form, and chart manipulates real application data:
 
-1. **Install Python dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+1. **Traffic Generation**:
+   - **`⚡ Burst 25 Req` / `📈 Burst 100 Req`**: Triggers concurrent asynchronous requests through the gateway to `/api/v1/proxy/api/data`. You will see real-time RPS increase, latency percentiles update, and access logs stream in immediately.
+2. **Dynamic Load Balancing Strategy**:
+   - Switch between **Round Robin**, **Least Connections**, and **Smooth Weighted Round Robin**. Watch the real-time node distribution progress bar adjust to the algorithm.
+3. **Node Weight & Concurrency Sliders**:
+   - Adjust weights (1–10) directly on each backend card to test weighted distribution.
+4. **Live Chaos & Fault Injection**:
+   - **`⏱ +500ms Delay`**: Injects artificial latency into an upstream node. Notice how the Adaptive Traffic Controller detects rising $P_{95}$ latency and throttles concurrency.
+   - **`⚠️ 50% Errors`**: Forces a node to return HTTP 500. Observe consecutive failures incrementing until the node's Circuit Breaker trips to `OPEN`.
+   - **`🛑 Outage (Kill)`**: Simulates sudden backend death. The gateway health monitor flags it `UNHEALTHY` within 3 seconds, isolates it, and routes all traffic to the remaining healthy nodes with zero client errors.
+   - **`🔄 Restore / Reset`**: Recovers the backend. The health checker verifies consecutive health probes and automatically restores the node to the routing pool.
+5. **Rate Limiting Configuration**:
+   - Configure **Token Bucket** (Capacity, Refill Rate) or **Sliding Window Log** (Window Limit, Window Seconds). Exceed the limit to observe the gateway's HTTP 429 Shield in action.
+6. **HTTP Cache Control**:
+   - Click **`🧹 Flush Cache`** to clear the cache and watch cache hit rates adjust dynamically.
 
-2. **Launch all services using the orchestrator**:
-   ```bash
-   python scripts/run_all.py
-   ```
-   *This automatically launches Backend 1, Backend 2, Backend 3, the Gateway on port 8000, and the React Dashboard on port 3000.*
+---
+
+### 3.4 Automated Local Verification
+
+Run the automated local verification script to validate all 13 checks across your stack:
+
+```bash
+python scripts/verify_local.py
+```
+
+Expected output:
+```text
+=== TrafficGuard Local Stack Verification ===
+
+1. Checking Upstream Backend Nodes:
+  ✔ PASS: Backend Alpha (8001) health (HTTP 200)
+  ✔ PASS: Backend Beta (8002) health (HTTP 200)
+  ✔ PASS: Backend Gamma (8003) health (HTTP 200)
+
+2. Checking Gateway Health & Admin APIs:
+  ✔ PASS: Gateway /health (Status: UP)
+  ✔ PASS: Gateway /api/metrics/summary
+  ✔ PASS: Gateway registered backends (3 nodes)
+
+3. Checking CORS Configuration for Local Vite UI:
+  ✔ PASS: CORS Access-Control-Allow-Origin (Origin: http://localhost:5173, Credentials: true)
+
+4. Checking Traffic Forwarding & Load Balancing:
+  ✔ PASS: Traffic proxy forwarding /api/v1/proxy/api/data (15/15 200 OK)
+  ✔ PASS: Load balancer multi-node distribution (Routed across: backend-1, backend-2, backend-3)
+
+5. Checking Rate Limiting Enforcement:
+  ✔ PASS: Rate Limiter triggers HTTP 429 Shield (429 Too Many Requests received)
+
+6. Checking Fault Injection Controls:
+  ✔ PASS: Inject fault: delay +250ms
+  ✔ PASS: Reset fault on backend-1
+
+7. Checking Vite React Frontend Dev Server:
+  ✔ PASS: Frontend dev server running on http://localhost:5173 (HTTP 200)
+
+==================================================
+ALL 13 CHECKS PASSED! Local stack is 100% operational.
+==================================================
+```
+
+---
+
+### 3.5 Local Troubleshooting & FAQs
+
+- **Port in use (`WinError 10048` or `EADDRINUSE`)**:
+  - If ports 8000, 8001, 8002, 8003, or 5173 are held by prior processes, terminate them with:
+    ```powershell
+    Get-Process python, node -ErrorAction SilentlyContinue | Stop-Process -Force
+    ```
+- **CORS Errors in Browser Console**:
+  - The gateway has `CORSMiddleware` configured to permit all requests from `http://localhost:5173` and `http://127.0.0.1:5173` with credentials and headers allowed. Additionally, the Vite development server proxies `/api`, `/health`, and `/metrics` to `http://localhost:8000` automatically.
+- **PostgreSQL / Redis Not Installed Locally?**:
+  - TrafficGuard features zero-configuration fallback: if PostgreSQL or Redis are not detected, the gateway automatically activates **resilient SQLite** (`aiosqlite`) and **in-memory thread-safe rate limiting/caching**. Everything works out of the box without installing external databases.
 
 ---
 

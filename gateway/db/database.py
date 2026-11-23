@@ -20,11 +20,13 @@ async def init_db():
     for url in [primary_url, fallback_url]:
         try:
             logger.info(f"Connecting to database at {url.split('@')[-1]}...")
+            connect_args = {"timeout": 1.0} if "postgresql" in url else {}
             test_engine = create_async_engine(
                 url,
                 echo=False,
                 future=True,
-                pool_pre_ping=True
+                pool_pre_ping=True,
+                connect_args=connect_args,
             )
             async with test_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)

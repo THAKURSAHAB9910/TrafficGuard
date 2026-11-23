@@ -6,6 +6,7 @@ import asyncio
 from typing import Optional
 from fastapi import FastAPI, Request, Response, HTTPException, status
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 SERVICE_ID = os.getenv("SERVICE_ID", "backend-1")
@@ -13,6 +14,14 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", f"Backend Node {SERVICE_ID}")
 PORT = int(os.getenv("PORT", "8001"))
 
 app = FastAPI(title=f"TrafficGuard Real Backend - {SERVICE_NAME}", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Simulation control state
 state = {
