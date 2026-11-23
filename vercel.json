@@ -1,32 +1,11 @@
 {
-  "version": 2,
   "buildCommand": "cd dashboard && npm install && npm run build",
   "outputDirectory": "dashboard/dist",
-  "builds": [
+  "cleanUrls": true,
+  "rewrites": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "dashboard/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/index.py"
-    },
-    {
-      "src": "/metrics",
-      "dest": "api/index.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "dashboard/$1"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

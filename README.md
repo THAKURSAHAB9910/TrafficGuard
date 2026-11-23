@@ -11,6 +11,9 @@
 
 🌐 **Live Vercel Production Deployment:** [https://trafficguard-vishesh9910.vercel.app](https://trafficguard-vishesh9910.vercel.app)
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTHAKURSAHAB9910%2FTrafficGuard)
+
+
 ---
 
 ## 🖥️ Live Dashboard Tour & Overview

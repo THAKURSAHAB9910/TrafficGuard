@@ -1,0 +1,14 @@
+{
+  "name": "trafficguard-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TrafficGuard — Adaptive Traffic Management & Resilience Platform",
+  "scripts": {
+    "build": "cd dashboard && npm install && npm run build",
+    "start": "cd dashboard && npm run preview",
+    "dev": "cd dashboard && npm run dev"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}
